@@ -1,0 +1,100 @@
+<div class="container">
+  <div class="header">
+    <h1>Gestión de Turnos</h1>
+  </div>
+
+  <div class="error-message" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+  <div class="success-message" *ngIf="successMessage()">{{ successMessage() }}</div>
+
+  <!-- Vista para CAJERO/ASESOR -->
+  <div *ngIf="isCajero() || isAsesor()" class="atencion-container">
+    <div class="turno-actual-card" *ngIf="turnoActual()">
+      <h2>Turno en Atención</h2>
+      <div class="turno-info">
+        <div class="turno-numero">{{ turnoActual()!.numeroTurno }}</div>
+        <div class="turno-details">
+          <p><strong>Cliente:</strong> {{ turnoActual()!.cliente.nombre }}</p>
+          <p><strong>Documento:</strong> {{ turnoActual()!.cliente.documento }}</p>
+          <p><strong>Motivo:</strong> {{ turnoActual()!.motivo }}</p>
+          <p><strong>Categoría:</strong> {{ turnoActual()!.cliente.categoria }}</p>
+        </div>
+        <button class="btn-success" (click)="finalizarAtencion(turnoActual()!.turnoId!)">Finalizar Atención</button>
+      </div>
+    </div>
+
+    <div class="siguiente-turno-card" *ngIf="!turnoActual()">
+      <h2>Siguiente Turno</h2>
+      <div *ngIf="siguienteTurno()" class="turno-info">
+        <div class="turno-numero">{{ siguienteTurno()!.numeroTurno }}</div>
+        <div class="turno-details">
+          <p><strong>Cliente:</strong> {{ siguienteTurno()!.cliente.nombre }}</p>
+          <p><strong>Documento:</strong> {{ siguienteTurno()!.cliente.documento }}</p>
+          <p><strong>Motivo:</strong> {{ siguienteTurno()!.motivo }}</p>
+          <p><strong>Categoría:</strong> {{ siguienteTurno()!.cliente.categoria }}</p>
+        </div>
+        <button class="btn-primary" (click)="iniciarAtencion(siguienteTurno()!.turnoId!)">Iniciar Atención</button>
+      </div>
+      <div *ngIf="!siguienteTurno()" class="empty-state">
+        <button class="btn-primary" (click)="obtenerSiguienteTurno()" [disabled]="isLoading()">Obtener Siguiente Turno</button>
+      </div>
+    </div>
+
+    <div class="pendientes-card">
+      <h2>Turnos Pendientes</h2>
+      <div class="turnos-list">
+        <div class="turno-item" *ngFor="let turno of turnos()">
+          <div class="turno-header">
+            <span class="turno-numero-small">{{ turno.numeroTurno }}</span>
+            <span class="badge" [class.badge-preferencial]="turno.cliente.categoria === 'PREFERENCIAL'" [class.badge-vip]="turno.cliente.categoria === 'VIP'" [class.badge-adulto]="turno.cliente.categoria === 'ADULTO_MAYOR'">{{ turno.cliente.categoria }}</span>
+          </div>
+          <div class="turno-meta">
+            <span>{{ turno.cliente.nombre }}</span>
+            <span>{{ turno.motivo }}</span>
+          </div>
+        </div>
+        <div class="empty-message" *ngIf="turnos().length === 0">No hay turnos pendientes</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista para ADMIN -->
+  <div *ngIf="isAdmin()" class="admin-container">
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Número</th><th>Cliente</th><th>Documento</th><th>Categoría</th><th>Motivo</th><th>Cola</th><th>Estado</th><th>Prioridad</th><th>Fecha</th><th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let turno of turnos()">
+            <td>{{ turno.numeroTurno }}</td>
+            <td>{{ turno.cliente.nombre }}</td>
+            <td>{{ turno.cliente.documento }}</td>
+            <td><span class="badge" [class.badge-preferencial]="turno.cliente.categoria === 'PREFERENCIAL'" [class.badge-vip]="turno.cliente.categoria === 'VIP'" [class.badge-adulto]="turno.cliente.categoria === 'ADULTO_MAYOR'">{{ turno.cliente.categoria }}</span></td>
+            <td>{{ turno.motivo }}</td>
+            <td>{{ turno.tipoCola }}</td>
+            <td><span class="badge" [class.badge-pending]="turno.estado === 'PENDIENTE'" [class.badge-attention]="turno.estado === 'EN_ATENCION'" [class.badge-completed]="turno.estado === 'ATENDIDO'">{{ turno.estado }}</span></td>
+            <td>{{ turno.prioridad }}</td>
+            <td>{{ formatDate(turno.fechaCreacion) }}</td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn-edit" (click)="pasarTurnoPrimero(turno.turnoId!)" *ngIf="turno.estado === 'PENDIENTE'" title="Pasar turno al primero de la cola">
+                  Priorizar
+                </button>
+                <button class="btn-delete" (click)="cancelarTurno(turno.turnoId!)" *ngIf="turno.estado !== 'CANCELADO' && turno.estado !== 'ATENDIDO'" title="Cancelar turno">
+                  Cancelar
+                </button>
+                <button class="btn-danger" (click)="eliminarTurno(turno.turnoId!)" *ngIf="turno.estado === 'CANCELADO' || turno.estado === 'ATENDIDO'" title="Eliminar turno permanentemente">
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+          <tr *ngIf="turnos().length === 0"><td colspan="10" class="empty-message">No hay turnos registrados</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+

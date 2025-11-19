@@ -1,0 +1,145 @@
+<div class="public-container">
+  <!-- Botón de acceso al sistema -->
+  <button class="system-access-btn" (click)="irAlSistema()">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+    </svg>
+    Acceso al Sistema
+  </button>
+
+  <div class="public-content">
+    <div class="header-section">
+      <h1>Sistema de Turnero</h1>
+      <p class="subtitle">Genera tu turno de forma rápida y sencilla</p>
+    </div>
+
+    <!-- Mensaje de éxito con turno generado -->
+    <div class="success-card" *ngIf="turnoGenerado()">
+      <div class="success-icon">✓</div>
+      <h2>¡Turno Generado Exitosamente!</h2>
+      <div class="turno-display">
+        <div class="turno-numero">{{ turnoGenerado()!.numeroTurno }}</div>
+        <div class="turno-info">
+          <p><strong>Cliente:</strong> {{ turnoGenerado()!.cliente.nombre }}</p>
+          <p><strong>Motivo:</strong> {{ turnoGenerado()!.motivo }}</p>
+          <p><strong>Cola:</strong> {{ turnoGenerado()!.tipoCola }}</p>
+          <p><strong>Estado:</strong> {{ turnoGenerado()!.estado }}</p>
+        </div>
+      </div>
+      <button class="btn-primary" (click)="nuevoTurno()">Generar Otro Turno</button>
+    </div>
+
+    <!-- Formulario principal -->
+    <div class="form-container" *ngIf="!turnoGenerado()">
+      <!-- Búsqueda de cliente -->
+      <div class="form-section">
+        <h2>1. Buscar o Registrar Cliente</h2>
+        <div class="search-box">
+          <input
+            type="text"
+            placeholder="Ingrese su número de documento"
+            [value]="searchDocumento()"
+            (input)="searchDocumento.set($any($event.target).value)"
+            (keyup.enter)="buscarCliente()"
+          />
+          <button class="btn-primary" (click)="buscarCliente()" [disabled]="isLoading()">
+            Buscar
+          </button>
+        </div>
+
+        <!-- Formulario de registro de cliente -->
+        <div class="register-form" *ngIf="!clienteEncontrado() && !showTurnoForm()">
+          <h3>¿No está registrado? Complete sus datos:</h3>
+          <form [formGroup]="clienteForm" (ngSubmit)="registrarCliente()">
+            <div class="form-group">
+              <label>Nombre Completo *</label>
+              <input type="text" formControlName="nombre" placeholder="Ej: Juan Pérez" />
+              <span class="error-text" *ngIf="clienteForm.get('nombre')?.invalid && clienteForm.get('nombre')?.touched">
+                Nombre requerido (mínimo 3 caracteres)
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label>Documento de Identidad *</label>
+              <input type="text" formControlName="documento" placeholder="Ej: 12345678" />
+              <span class="error-text" *ngIf="clienteForm.get('documento')?.invalid && clienteForm.get('documento')?.touched">
+                Documento requerido
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label>Teléfono *</label>
+              <input type="text" formControlName="telefono" placeholder="Ej: 555-1234" />
+              <span class="error-text" *ngIf="clienteForm.get('telefono')?.invalid && clienteForm.get('telefono')?.touched">
+                Teléfono requerido
+              </span>
+            </div>
+
+            <div class="form-group">
+              <label>Categoría *</label>
+              <select formControlName="categoria">
+                <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+              </select>
+            </div>
+
+            <button type="submit" class="btn-primary" [disabled]="isLoading() || clienteForm.invalid">
+              Registrar Cliente
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Formulario de turno -->
+      <div class="form-section compact" *ngIf="clienteEncontrado() && showTurnoForm()">
+        <h2>2. Generar Turno</h2>
+        <div class="cliente-info">
+          <p><strong>Cliente:</strong> {{ clienteEncontrado()!.nombre }}</p>
+          <p><strong>Documento:</strong> {{ clienteEncontrado()!.documento }}</p>
+          <p><strong>Categoría:</strong> {{ clienteEncontrado()!.categoria }}</p>
+        </div>
+
+        <form [formGroup]="turnoForm" (ngSubmit)="crearTurno()">
+          <div class="form-group">
+            <label>Motivo del Turno *</label>
+            <textarea
+              formControlName="motivo"
+              rows="3"
+              placeholder="Describa el motivo de su visita. Ej: Depósito en efectivo, Consulta sobre crédito, etc."
+            ></textarea>
+            <small>El sistema determinará automáticamente si su turno es para CAJA o ASESORÍA según el motivo.</small>
+            <span class="error-text" *ngIf="turnoForm.get('motivo')?.invalid && turnoForm.get('motivo')?.touched">
+              Motivo requerido (mínimo 5 caracteres)
+            </span>
+          </div>
+
+          <button type="submit" class="btn-primary" [disabled]="isLoading() || turnoForm.invalid">
+            Generar Turno
+          </button>
+          <button type="button" class="btn-secondary" (click)="cancelarTurno()" [disabled]="isLoading()">
+            ← Volver
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Mensajes de error y éxito -->
+    <div class="error-message" *ngIf="errorMessage()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+      </svg>
+      <span>{{ errorMessage() }}</span>
+    </div>
+
+    <div class="success-message" *ngIf="successMessage() && !turnoGenerado()">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+      </svg>
+      <span>{{ successMessage() }}</span>
+    </div>
+
+    <div class="loading" *ngIf="isLoading()">
+      <span>Procesando...</span>
+    </div>
+  </div>
+</div>
+
